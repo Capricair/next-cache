@@ -104,13 +104,13 @@ function Client(url, options) {
     let socket = new Socket(url, conf.socket);
     let lock = {};
     
-    this.connect = () => {
+    this.connect = async () => {
         if (socket.readyState !== WebSocket.OPEN){
-            return socket.connect(url);
+            await socket.connect(url);
         } else {
             console.log(`server is already connected!`);
-            return Promise.resolve(false);
         }
+        return Promise.resolve(this);
     };
     
     this.get = (key, getData) => {

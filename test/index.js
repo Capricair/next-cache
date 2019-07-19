@@ -9,7 +9,7 @@ const Client = require("../src/client/index");
     });
     await server.start();
     
-    const client = new Client(`http://localhost:666`);
+    const client = new Client(`ws://localhost:666`);
     await client.connect();
     let cacheKey = "test_key";
     let sleep = async(millisecond)=>{
