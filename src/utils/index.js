@@ -6,7 +6,7 @@ const TimeUnit = {
 };
 
 const isCacheExpired = function(result){
-    return new Date() - result.timestamp > result.duration * TimeUnit.Second;
+    return new Date() - result.timestamp > result.ttl * TimeUnit.Second;
 };
 
 module.exports = {

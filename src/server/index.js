@@ -40,25 +40,25 @@ function Server(options) {
         get: (key, dataType)=>{
             console.log(`get cache ${key}`);
             let result = storage.get(key, dataType || "json") || {};
-            if (new Date() - result.timestamp > result.duration * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
+            if (new Date() - result.timestamp > result.ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
                 storage.remove(key);
                 return null;
             }
             return result;
         },
-        set: (key, value, duration)=>{
+        set: (key, value, ttl)=>{
             console.log(`set cache ${key}`);
             storage.set(key, {
                 value: value,
                 timestamp: new Date().getTime(),
-                duration: duration,
+                ttl: ttl,
             });
             // 清除上一个setTimeout，否则同一个key多次set，第一个setTimeout会提前删除缓存，同一个key应以最后一次为准
             clearTimeout(timeoutIds[key]);
             // 超过缓存过期时间后删除缓存，默认缓存时间延迟一分钟删除，因为高并发场景需要脏数据
             timeoutIds[key] = setTimeout(()=>{
                 storage.remove(key);
-            }, duration * TimeUnit.Second + conf.removeDelay * TimeUnit.Second);
+            }, ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second);
         },
         remove: (key)=>{
             storage.remove(key);
@@ -98,7 +98,7 @@ function Server(options) {
                                 data: result,
                             });
                         } else if (data.action === "set") {
-                            cache.set(data.key, data.value, data.duration);
+                            cache.set(data.key, data.value, data.ttl);
                             sendTo(client, {
                                 id: id,
                                 success: true,

@@ -24,7 +24,7 @@ const Client = require("../src/client/index");
         await sleep(3000);
         return {
             value: 123,
-            duration: 1,
+            ttl: 1,
         };
     };
     let value = await client.get(cacheKey, getData);

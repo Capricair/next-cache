@@ -28,8 +28,8 @@ const data = await cache.get(`cacheKey`, async()=>{
     return await new Promise(resolve => {
         setTimeout(()=>{
             resolve({
-                value: 123, // your data,
-                duration: 3600, // cache duration time
+                value: 123, // your data
+                ttl: 3600,  // cache time to live
             });
         }, 1000)
     })

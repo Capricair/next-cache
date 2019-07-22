@@ -95,7 +95,7 @@ function Socket(url, options) {
 function Client(url, options) {
     let _default = {
         client: {
-            duration: 3600,
+            ttl: 3600,
         },
         socket: {
             ws: {},
@@ -123,7 +123,7 @@ function Client(url, options) {
                 if (!result.value || (isCacheExpired(result) && typeof getData === "function" && !lock[key])){
                     lock[key] = true;
                     result = await getData();
-                    await this.set(key, result.value, result.duration);
+                    await this.set(key, result.value, result.ttl);
                     delete lock[key];
                 }
                 resolve(result.value);
@@ -131,13 +131,13 @@ function Client(url, options) {
         });
     };
 
-    this.set = (key, value, duration) => {
+    this.set = (key, value, ttl) => {
         return new Promise(resolve => {
             socket.send({
                 action: "set",
                 key: key,
                 value: value,
-                duration: duration || conf.client.duration,
+                ttl: ttl || conf.client.ttl,
             }, resolve);
         });
     };
