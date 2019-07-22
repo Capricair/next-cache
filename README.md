@@ -12,7 +12,7 @@ npm install next-cache
 ```
 
 ## start
-```ecmascript 6
+```
 // server
 const NextCache = require("next-cache");
 const server = NextCache.Server({
@@ -27,7 +27,10 @@ await cache.connect();
 const data = await cache.get(`cacheKey`, async()=>{
     return await new Promise(resolve => {
         setTimeout(()=>{
-            resolve(123);
+            resolve({
+                value: 123, // your data,
+                duration: 3600, // cache duration time
+            });
         }, 1000)
     })
 })

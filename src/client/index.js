@@ -21,6 +21,7 @@ function Socket(url, options) {
     this.isConnected = false;
 
     this.connect = ()=>{
+        let retryCount = 1;
         return new Promise(resolve => {
             try {
                 if (ws.terminate){
@@ -55,7 +56,7 @@ function Socket(url, options) {
                 ws.on("close", ()=>{
                     // 如果isConnected是true说明是连上之后意外情况导致的连接中断
                     if (this.isConnected === true){
-                        console.log(`connection is closed, retry ${conf.retry++}`);
+                        console.log(`connection is closed, retry ${retryCount++}`);
                         console.log(`reconnecting...`);
                         this.connect(url);
                     }

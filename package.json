@@ -1,6 +1,6 @@
 {
   "name": "next-cache",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "main": "index.js",
   "scripts": {
     "server": "node test/run-server.js"

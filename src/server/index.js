@@ -38,6 +38,7 @@ function Server(options) {
     };
     const cache = {
         get: (key, dataType)=>{
+            console.log(`get cache ${key}`);
             let result = storage.get(key, dataType || "json") || {};
             if (new Date() - result.timestamp > result.duration * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
                 storage.remove(key);
@@ -46,6 +47,7 @@ function Server(options) {
             return result;
         },
         set: (key, value, duration)=>{
+            console.log(`set cache ${key}`);
             storage.set(key, {
                 value: value,
                 timestamp: new Date().getTime(),
