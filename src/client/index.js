@@ -123,11 +123,10 @@ function Client(url, options) {
                 if (!result.value || (isCacheExpired(result) && typeof getData === "function" && !lock[key])){
                     lock[key] = true;
                     result = await getData();
-                    if ("value" in result && "ttl" in result){
-                        await this.set(key, result.value, result.ttl);
-                    } else {
-                        await this.set(key, result);
+                    if ("ttl" in result === false){
+                        result = {value: result, ttl: conf.client.ttl};
                     }
+                    await this.set(key, result.value, result.ttl);
                     delete lock[key];
                 }
                 resolve(result.value);
