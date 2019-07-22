@@ -5,6 +5,7 @@ function Server(options) {
     const _default = {
         port: process.env.PORT || 666,
         verify: () => true,
+        onMessage: ()=>{},
         removeDelay: 60
     };
     const conf = Object.assign({}, _default, options);
@@ -38,7 +39,6 @@ function Server(options) {
     };
     const cache = {
         get: (key, dataType)=>{
-            console.log(`get cache ${key}`);
             let result = storage.get(key, dataType || "json") || {};
             if (new Date() - result.timestamp > result.ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
                 storage.remove(key);
@@ -47,7 +47,6 @@ function Server(options) {
             return result;
         },
         set: (key, value, ttl)=>{
-            console.log(`set cache ${key}`);
             storage.set(key, {
                 value: value,
                 timestamp: new Date().getTime(),
@@ -90,6 +89,9 @@ function Server(options) {
 
                 client.on("message", function (message) {
                     try {
+                        if (typeof conf.onMessage === "function"){
+                            conf.onMessage(message);
+                        }
                         let {id, data} = JSON.parse(message);
                         if (data.action === "get"){
                             let result = cache.get(data.key);
