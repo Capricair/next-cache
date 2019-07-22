@@ -1,6 +1,7 @@
 # next-cache
 
-This is a server side rendering cache service
+This is a server side rendering cache service  
+It is suitable for distributed and Load balancing application
 
 ## environment
 node 10.15.3  
