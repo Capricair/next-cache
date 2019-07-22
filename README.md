@@ -29,7 +29,7 @@ const data = await cache.get(`cacheKey`, async()=>{
         setTimeout(()=>{
             resolve({
                 value: 123, // your data
-                ttl: 3600,  // cache time to live
+                ttl: 3600,  // time to live, default is one hour
             });
         }, 1000)
     })
