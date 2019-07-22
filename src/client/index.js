@@ -120,16 +120,19 @@ function Client(url, options) {
                 action: "get",
                 key: key,
             }, async(result)=>{
-                if (!result.value || (isCacheExpired(result) && typeof getData === "function" && !lock[key])){
-                    lock[key] = true;
-                    result = await getData();
-                    if ("ttl" in result === false){
-                        result = {value: result, ttl: conf.client.ttl};
+                try {
+                    if (!result.value || (isCacheExpired(result) && typeof getData === "function" && !lock[key])){
+                        lock[key] = true;
+                        result = await getData();
+                        if ("ttl" in result === false){
+                            result = {value: result, ttl: conf.client.ttl};
+                        }
+                        await this.set(key, result.value, result.ttl);
                     }
-                    await this.set(key, result.value, result.ttl);
+                } finally {
                     delete lock[key];
+                    resolve(result.value);
                 }
-                resolve(result.value);
             });
         });
     };
