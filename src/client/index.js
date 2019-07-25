@@ -19,12 +19,10 @@ function Socket(url, options) {
     
     let ws = {};
     let queue = {};
-    let retryCount = 1;
 
     this.isConnected = false;
 
     this.connect = ()=>{
-        
         return new Promise(resolve => {
             try {
                 if (ws.terminate){
@@ -48,7 +46,7 @@ function Socket(url, options) {
                         }
                         delete queue[result.id];
                     } catch (e) {
-                        console.log(e);
+                        console.error(e);
                     }
                 });
 
@@ -58,8 +56,8 @@ function Socket(url, options) {
 
                 ws.on("close", ()=>{
                     // 如果isConnected是true说明是连上之后意外情况导致的连接中断
-                    if (this.isConnected === true && retryCount <= conf.retry){
-                        console.log(`connection is closed, retry ${retryCount++}`);
+                    if (this.isConnected === true){
+                        console.log(`connection is closed!`);
                         console.log(`reconnecting...`);
                         this.connect(url);
                     }
@@ -111,12 +109,16 @@ function Client(url, options) {
     let lock = {};
     
     this.connect = async () => {
-        if (socket.readyState !== WebSocket.OPEN){
-            await socket.connect(url);
-        } else {
-            console.log(`server is already connected!`);
+        try {
+            if (socket.readyState !== WebSocket.OPEN){
+                await socket.connect(url);
+            } else {
+                console.log(`server is already connected!`);
+            }
+            return true;
+        } catch (e) {
+            return e;
         }
-        return Promise.resolve(this);
     };
     
     this.get = (key, getData) => {
