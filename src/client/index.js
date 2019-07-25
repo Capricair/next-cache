@@ -3,6 +3,8 @@ const uuid = require("uuid/v4");
 const {TimeUnit, isCacheExpired} = require("../utils/index");
 
 function Socket(url, options) {
+    "use strict";
+    
     const _default = {
         retry: 5,
         timeout: 30000,
@@ -17,11 +19,12 @@ function Socket(url, options) {
     
     let ws = {};
     let queue = {};
+    let retryCount = 1;
 
     this.isConnected = false;
 
     this.connect = ()=>{
-        let retryCount = 1;
+        
         return new Promise(resolve => {
             try {
                 if (ws.terminate){
@@ -55,7 +58,7 @@ function Socket(url, options) {
 
                 ws.on("close", ()=>{
                     // 如果isConnected是true说明是连上之后意外情况导致的连接中断
-                    if (this.isConnected === true){
+                    if (this.isConnected === true && retryCount <= conf.retry){
                         console.log(`connection is closed, retry ${retryCount++}`);
                         console.log(`reconnecting...`);
                         this.connect(url);
@@ -93,6 +96,8 @@ function Socket(url, options) {
 
 
 function Client(url, options) {
+    "use strict";
+    
     let _default = {
         client: {
             ttl: 3600,
@@ -128,9 +133,11 @@ function Client(url, options) {
                             result = {value: result, ttl: conf.client.ttl};
                         }
                         await this.set(key, result.value, result.ttl);
+                        delete lock[key];
                     }
-                } finally {
+                } catch (e) {
                     delete lock[key];
+                } finally {
                     resolve(result.value);
                 }
             });

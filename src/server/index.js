@@ -2,11 +2,14 @@ const WebSocket = require("ws");
 const {TimeUnit} = require("../utils/index");
 
 function Server(options) {
+    "use strict";
+    
     const _default = {
         port: process.env.PORT || 666,
         verify: () => true,
         onMessage: ()=>{},
-        removeDelay: 60
+        removeDelay: 60,
+        accessLog: false,
     };
     const conf = Object.assign({}, _default, options);
     const data = {};
@@ -39,6 +42,9 @@ function Server(options) {
     };
     const cache = {
         get: (key, dataType)=>{
+            if (conf.accessLog){
+                console.log(`get cache ${key}`);
+            }
             let result = storage.get(key, dataType || "json") || {};
             if (new Date() - result.timestamp > result.ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
                 storage.remove(key);
@@ -47,6 +53,9 @@ function Server(options) {
             return result;
         },
         set: (key, value, ttl)=>{
+            if (conf.accessLog){
+                console.log(`set cache ${key}`);
+            }
             storage.set(key, {
                 value: value,
                 timestamp: new Date().getTime(),
