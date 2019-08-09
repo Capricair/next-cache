@@ -1,28 +1,22 @@
 const WebSocket = require("ws");
 const {TimeUnit} = require("../utils/index");
 
-function Server(options) {
-    "use strict";
-    
+function Cache(options) {
     const _default = {
-        port: process.env.PORT || 666,
-        verify: () => true,
-        onMessage: ()=>{},
-        removeDelay: 60,
         accessLog: false,
     };
     const conf = Object.assign({}, _default, options);
-    const data = {};
+    const cache = {};
     const timeoutIds = {};
     const localStorage = {
         getItem: (key)=>{
-            return data[key];
+            return cache[key];
         },
         setItem: (key, value)=>{
-            data[key] = value;
+            cache[key] = value;
         },
         removeItem: (key)=>{
-            delete data[key];
+            delete cache[key];
         }
     };
     const storage = {
@@ -40,38 +34,51 @@ function Server(options) {
             localStorage.removeItem(key);
         }
     };
-    const cache = {
-        get: (key, dataType)=>{
-            if (conf.accessLog){
-                console.log(`get cache ${key}`);
-            }
-            let result = storage.get(key, dataType || "json") || {};
-            if (new Date() - result.timestamp > result.ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
-                storage.remove(key);
-                return null;
-            }
-            return result;
-        },
-        set: (key, value, ttl)=>{
-            if (conf.accessLog){
-                console.log(`set cache ${key}`);
-            }
-            storage.set(key, {
-                value: value,
-                timestamp: new Date().getTime(),
-                ttl: ttl,
-            });
-            // 清除上一个setTimeout，否则同一个key多次set，第一个setTimeout会提前删除缓存，同一个key应以最后一次为准
-            clearTimeout(timeoutIds[key]);
-            // 超过缓存过期时间后删除缓存，默认缓存时间延迟一分钟删除，因为高并发场景需要脏数据
-            timeoutIds[key] = setTimeout(()=>{
-                storage.remove(key);
-            }, ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second);
-        },
-        remove: (key)=>{
-            storage.remove(key);
+    this.get = (key, dataType)=>{
+        if (conf.accessLog){
+            console.log(`get cache ${key}`);
         }
+        let result = storage.get(key, dataType || "json") || {};
+        if (new Date() - result.timestamp > result.ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second){
+            storage.remove(key);
+            return null;
+        }
+        return result;
     };
+    this.set = (key, value, ttl)=>{
+        if (conf.accessLog){
+            console.log(`set cache ${key}`);
+        }
+        storage.set(key, {
+            value: value,
+            timestamp: new Date().getTime(),
+            ttl: ttl,
+        });
+        // 清除上一个setTimeout，否则同一个key多次set，第一个setTimeout会提前删除缓存，同一个key应以最后一次为准
+        clearTimeout(timeoutIds[key]);
+        // 超过缓存过期时间后删除缓存，默认缓存时间延迟一分钟删除，因为高并发场景需要脏数据
+        timeoutIds[key] = setTimeout(()=>{
+            storage.remove(key);
+        }, ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second);
+    };
+    this.remove = (key)=>{
+        storage.remove(key);
+    };
+}
+
+function Server(options) {
+    "use strict";
+    
+    const _default = {
+        port: process.env.PORT || 666,
+        verifyClient: () => true,
+        removeDelay: 60,
+        accessLog: false,
+    };
+    const conf = Object.assign({}, _default, options);
+    
+    const cache = new Cache(conf);
+    
     function sendTo(client, data) {
         try {
             if (typeof data !== "string"){
@@ -87,7 +94,7 @@ function Server(options) {
         return new Promise(resolve => {
             let WebSocketServer = new WebSocket.Server({
                 port: conf.port,
-                verifyClient: conf.verify,
+                verifyClient: conf.verifyClient,
             });
 
             WebSocketServer.on("connection", function (client, request) {
@@ -98,9 +105,6 @@ function Server(options) {
 
                 client.on("message", function (message) {
                     try {
-                        if (typeof conf.onMessage === "function"){
-                            conf.onMessage(message);
-                        }
                         let {id, data} = JSON.parse(message);
                         if (data.action === "get"){
                             let result = cache.get(data.key);
