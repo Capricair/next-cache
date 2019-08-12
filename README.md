@@ -13,7 +13,7 @@ npm install next-cache
 ```
 
 ## start
-```
+```js
 // server
 const NextCache = require("next-cache");
 const server = NextCache.Server({
@@ -25,7 +25,7 @@ server.start();
 const NextCache = require("next-cache");
 const cache = NextCache.Client("ws://localhost:666");
 await cache.connect();
-const data = await cache.get(`cacheKey`, async()=>{
+const data = await cache.get(`your_cache_key`, async()=>{
     return await new Promise(resolve => {
         setTimeout(()=>{
             resolve({

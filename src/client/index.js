@@ -5,23 +5,32 @@ const {TimeUnit, isCacheExpired} = require("../utils/index");
 function Socket(url, options) {
     "use strict";
     
-    const _default = {
+    const defaults = {
         retry: 5,
         timeout: 30000,
         ws: {
             perMessageDeflate: true,  //启用数据压缩
         },
     };
-    const conf = Object.assign({}, _default, options);
+    const conf = Object.assign({}, defaults, options);
     const getUniqueId = function () {
         return uuid();
     };
     
     let ws = {};
     let queue = {};
+    let isConnectSuccess = false;
+    let isConnected = false;
 
-    this.isConnected = false;
-
+    Object.defineProperties(this, {
+        isConnected: {
+            configurable: false,
+            get: ()=>{
+                return isConnected;
+            }
+        }
+    });
+    
     this.connect = ()=>{
         return new Promise(resolve => {
             try {
@@ -32,7 +41,8 @@ function Socket(url, options) {
                 ws = new WebSocket(url, conf.ws);
 
                 ws.on("open", ()=>{
-                    this.isConnected = true;
+                    isConnectSuccess = true;
+                    isConnected = true;
                     console.log(`server is connected!`);
                     resolve();
                 });
@@ -55,9 +65,10 @@ function Socket(url, options) {
                 });
 
                 ws.on("close", ()=>{
-                    // 如果isConnected是true说明是连上之后意外情况导致的连接中断
-                    if (this.isConnected === true){
-                        console.log(`connection is closed!`);
+                    isConnected = false;
+                    console.log(`connection is closed!`);
+                    // 成功连接之后意外情况导致的连接中断才需要重连
+                    if (isConnectSuccess === true){
                         console.log(`reconnecting...`);
                         this.connect(url);
                     }
@@ -96,7 +107,7 @@ function Socket(url, options) {
 function Client(url, options) {
     "use strict";
     
-    let _default = {
+    let defaults = {
         client: {
             ttl: 3600,
         },
@@ -104,7 +115,7 @@ function Client(url, options) {
             ws: {},
         },
     };
-    let conf = Object.assign({}, _default, options);
+    let conf = Object.assign({}, defaults, options);
     let socket = new Socket(url, conf.socket);
     let lock = {};
     
