@@ -32,7 +32,7 @@ function Socket(url, options) {
     });
     
     this.connect = ()=>{
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             try {
                 if (ws.terminate){
                     ws.terminate();
@@ -44,7 +44,7 @@ function Socket(url, options) {
                     isConnectSuccess = true;
                     isConnected = true;
                     console.log(`server is connected!`);
-                    resolve();
+                    resolve(true);
                 });
 
                 ws.on("message", (data)=>{
@@ -62,12 +62,13 @@ function Socket(url, options) {
 
                 ws.on("error", (e)=>{
                     console.error(e);
+                    resolve(false);
                 });
 
                 ws.on("close", ()=>{
                     isConnected = false;
                     console.log(`connection is closed!`);
-                    // 成功连接之后意外情况导致的连接中断才需要重连
+                    // 连接成功后意外情况导致的连接中断才需要自动重连
                     if (isConnectSuccess === true){
                         console.log(`reconnecting...`);
                         this.connect(url);
@@ -75,31 +76,38 @@ function Socket(url, options) {
                 });
             } catch (e) {
                 console.error(e);
+                resolve(false);
             }
         })
     };
     
     this.send = (data, callback)=>{
-        try {
-            if (ws.readyState === WebSocket.OPEN){
-                let id = getUniqueId();
-                queue[id] = callback;
-                ws.send(JSON.stringify({
-                    id: id,
-                    data: data,
-                }));
-                setTimeout(()=>{
-                    if (queue[id]){
-                        queue[id](null);
-                        delete queue[id];
-                    }
-                }, conf.timeout);
-            } else {
-                console.error(`server is disconnected!`);
+        return new Promise(resolve => {
+            try {
+                if (ws.readyState === WebSocket.OPEN){
+                    let id = getUniqueId();
+                    queue[id] = callback;
+                    ws.send(JSON.stringify({
+                        id: id,
+                        data: data,
+                    }), {}, ()=>{
+                        resolve(true);
+                    });
+                    setTimeout(()=>{
+                        if (queue[id]){
+                            queue[id](null);
+                            delete queue[id];
+                        }
+                    }, conf.timeout);
+                } else {
+                    console.error(`server is disconnected!`);
+                    resolve(false);
+                }
+            } catch (e) {
+                console.error(e);
+                resolve(false);
             }
-        } catch (e) {
-            console.error(e);
-        }
+        });
     };
 }
 
@@ -118,6 +126,15 @@ function Client(url, options) {
     let conf = Object.assign({}, defaults, options);
     let socket = new Socket(url, conf.socket);
     let lock = {};
+
+    Object.defineProperties(this, {
+        isConnected: {
+            configurable: false,
+            get: ()=>{
+                return socket.isConnected;
+            }
+        }
+    });
     
     this.connect = async () => {
         try {
