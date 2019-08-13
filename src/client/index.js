@@ -147,16 +147,16 @@ function Client(url, options) {
         }
     };
     
-    this.get = (key, getData) => {
+    this.get = (key, getValue) => {
         return new Promise(resolve => {
             socket.send({
                 action: "get",
                 key: key,
             }, async(result)=>{
                 try {
-                    if (!result.value || (isCacheExpired(result) && typeof getData === "function" && !lock[key])){
+                    if (!result.value || (isCacheExpired(result) && typeof getValue === "function" && !lock[key])){
                         lock[key] = true;
-                        result = await getData();
+                        result = await getValue();
                         if ("ttl" in result === false){
                             result = {value: result, ttl: conf.client.ttl};
                         }
