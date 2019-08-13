@@ -13,15 +13,10 @@ function Socket(url, options) {
         },
     };
     const conf = Object.assign({}, defaults, options);
-    const getUniqueId = function () {
-        return uuid();
-    };
-    
+
     let ws = {};
-    let queue = {};
     let isConnectSuccess = false;
     let isConnected = false;
-
     Object.defineProperties(this, {
         isConnected: {
             configurable: false,
@@ -30,6 +25,20 @@ function Socket(url, options) {
             }
         }
     });
+    
+    const queue = {};
+    const getUniqueId = function () {
+        return uuid();
+    };
+    const response = function (id, data) {
+        const callback = queue[id];
+        if (callback){
+            if (typeof callback === "function"){
+                callback(data);
+            }
+            delete queue[id];
+        }
+    };
     
     this.connect = ()=>{
         return new Promise((resolve) => {
@@ -50,11 +59,7 @@ function Socket(url, options) {
                 ws.on("message", (data)=>{
                     try {
                         let result = JSON.parse(data);
-                        let callback = queue[result.id];
-                        if (typeof callback === "function"){
-                            callback(result.data);
-                        }
-                        delete queue[result.id];
+                        response(result.id, result.data);
                     } catch (e) {
                         console.error(e);
                     }
@@ -82,32 +87,25 @@ function Socket(url, options) {
     };
     
     this.send = (data, callback)=>{
-        return new Promise(resolve => {
-            try {
-                if (ws.readyState === WebSocket.OPEN){
-                    let id = getUniqueId();
-                    queue[id] = callback;
-                    ws.send(JSON.stringify({
-                        id: id,
-                        data: data,
-                    }), {}, ()=>{
-                        resolve(true);
-                    });
-                    setTimeout(()=>{
-                        if (queue[id]){
-                            queue[id](null);
-                            delete queue[id];
-                        }
-                    }, conf.timeout);
-                } else {
-                    console.error(`server is disconnected!`);
-                    resolve(false);
-                }
-            } catch (e) {
-                console.error(e);
-                resolve(false);
+        const id = getUniqueId();
+        queue[id] = callback;
+        try {
+            if (ws.readyState === WebSocket.OPEN){
+                ws.send(JSON.stringify({
+                    id: id,
+                    data: data,
+                }));
+                setTimeout(()=>{
+                    response(id, null);
+                }, conf.timeout);
+            } else {
+                console.error(`server is disconnected!`);
+                response(id, null)
             }
-        });
+        } catch (e) {
+            console.error(e);
+            response(id, null);
+        }
     };
 }
 
