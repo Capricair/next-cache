@@ -16,14 +16,14 @@ npm install next-cache
 ```js
 // server
 const NextCache = require("next-cache");
-const server = NextCache.Server({
+const server = new NextCache.Server({
     port: 666,
 });
 server.start();
 
 // client
 const NextCache = require("next-cache");
-const cache = NextCache.Client("ws://localhost:666");
+const cache = new NextCache.Client("ws://localhost:666");
 await cache.connect();
 const data = await cache.get(`your_cache_key`, async()=>{
     return await new Promise(resolve => {
