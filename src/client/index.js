@@ -158,7 +158,7 @@ function Client(url, options) {
                     if (!result.value || (isCacheExpired(result) && typeof getValue === "function" && !lock[key])){
                         lock[key] = true;
                         result = await getValue();
-                        if ("ttl" in result === false){
+                        if (typeof result !== "object" || "ttl" in result === false){
                             result = {value: result, ttl: conf.client.ttl};
                         }
                         await this.set(key, result.value, result.ttl);

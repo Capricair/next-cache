@@ -22,7 +22,7 @@ const Client = require("../src/client/index");
     async function getValue() {
         console.log(`get value`);
         await sleep(1000);
-        return `your value`;
+        return `your value 2`;
     }
 
     // async function test() {
@@ -35,60 +35,16 @@ const Client = require("../src/client/index");
     //     }
     // }
     
-    async function test() {
-        await cache.set("cache_key", `your value`, 3);
-        await sleep(5 * 1000);
-        await cache.get("cache_key", getValue);
-    }
-    
+    await cache.set("cache_key", `your value 1`, 3);
+    await sleep(5 * 1000);
+    let tasks = [];
     for (let i=0; i<10; i++){
-        test();
+        tasks.push(cache.get("cache_key", getValue));
     }
+    let values = await Promise.all(tasks);
+    console.log(values);
     
-    // const server = new Server({
-    //     port: 666,
-    //     accessLog: true,
-    // });
-    // await server.start();
-    //
-    // const client = new Client(`ws://localhost:666`);
-    // await client.connect();
-    // let cacheKey = "test_key";
-    // let sleep = async(millisecond)=>{
-    //     return new Promise(resolve => {
-    //         setTimeout(()=>{
-    //             resolve();
-    //         }, millisecond);
-    //     })
-    // };
-    // let getData = async()=>{
-    //     console.log(`update cache`);
-    //     await sleep(3000);
-    //     return {
-    //         value: 123,
-    //         ttl: 1,
-    //     };
-    // };
-    // console.log(`get value`);
-    // let now = new Date();
-    // let value = await client.get(cacheKey, getData);
-    // console.log(`value is ${value}, use ${new Date() - now}ms`);
-    // console.log(`wait 5 seconds`);
-    // await sleep(5000);
-    // console.log(`get value 10 times`);
-    // now = new Date();
-    // let values = await Promise.all([
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    //     client.get(cacheKey, getData),
-    // ]);
-    // console.log(`value is ${values}, use ${new Date() - now}ms`);
+    let value = await cache.get(`cache_key`, getValue);
+    console.log(value);
     
 })();
