@@ -113,7 +113,7 @@ function Socket(url, options) {
 function Client(url, options) {
     "use strict";
     
-    let defaults = {
+    const defaults = {
         client: {
             ttl: 3600,
         },
@@ -121,9 +121,10 @@ function Client(url, options) {
             ws: {},
         },
     };
-    let conf = Object.assign({}, defaults, options);
+    const conf = Object.assign({}, defaults, options);
+    const lock = {};
+    
     let socket = new Socket(url, conf.socket);
-    let lock = {};
 
     Object.defineProperties(this, {
         isConnected: {

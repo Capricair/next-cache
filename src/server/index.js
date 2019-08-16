@@ -2,13 +2,15 @@ const WebSocket = require("ws");
 const {TimeUnit} = require("../utils/index");
 
 function Cache(options) {
-    const _default = {
+    const defaults = {
+        localStorage: null,
         accessLog: false,
+        removeDelay: 60,
     };
-    const conf = Object.assign({}, _default, options);
+    const conf = Object.assign({}, defaults, options);
     const cache = {};
     const timeoutIds = {};
-    const localStorage = {
+    const localStorage = conf.localStorage || {
         getItem: (key)=>{
             return cache[key];
         },
@@ -69,14 +71,13 @@ function Cache(options) {
 function Server(options) {
     "use strict";
     
-    const _default = {
+    const defaults = {
         port: process.env.PORT || 666,
         verifyClient: () => true,
         removeDelay: 60,
         accessLog: false,
     };
-    const conf = Object.assign({}, _default, options);
-    
+    const conf = Object.assign({}, defaults, options);
     const cache = new Cache(conf);
     
     function sendTo(client, data) {
