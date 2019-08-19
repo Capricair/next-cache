@@ -25,26 +25,32 @@ const Client = require("../src/client/index");
         return `your value 2`;
     }
 
-    // async function test() {
-    //     await cache.set("cache_key", "your value", 3);
-    //     await sleep(5 * 1000);
-    //     let value = await cache.get("cache_key");
-    //     if (!value){
-    //         value = await getValue();
-    //         cache.set("cache_key", value, 3600);
-    //     }
-    // }
-    
-    await cache.set("cache_key", `your value 1`, 3);
-    await sleep(5 * 1000);
-    let tasks = [];
-    for (let i=0; i<10; i++){
-        tasks.push(cache.get("cache_key", getValue));
+    async function test1() {
+        console.log(`test 1 start`);
+        await cache.set("cache_key1", "your value", 3);
+        await sleep(5 * 1000);
+        for (let i=0; i<10; i++){
+            (async function () {
+                let value = await cache.get("cache_key");
+                if (!value){
+                    value = await getValue();
+                    cache.set("cache_key1", value, 3600);
+                }
+            })();
+        }
     }
-    let values = await Promise.all(tasks);
-    console.log(values);
     
-    let value = await cache.get(`cache_key`, getValue);
-    console.log(value);
+    async function test2(){
+        console.log(`test 2 start`);
+        await cache.set("cache_key2", "your value", 3);
+        await sleep(5 * 1000);
+        for (let i=0; i<10; i++){
+            cache.get("cache_key2", getValue);
+        }
+    }
+    
+    // await test1();
+    await test2();
+    
     
 })();
