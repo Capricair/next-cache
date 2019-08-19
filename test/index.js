@@ -36,6 +36,7 @@ const Client = require("../src/client/index");
                     value = await getValue();
                     cache.set("cache_key1", value, 3600);
                 }
+                console.log(value);
             })();
         }
     }
@@ -45,7 +46,9 @@ const Client = require("../src/client/index");
         await cache.set("cache_key2", "your value", 3);
         await sleep(5 * 1000);
         for (let i=0; i<10; i++){
-            cache.get("cache_key2", getValue);
+            cache.get("cache_key2", getValue).then((value)=>{
+                console.log(value);
+            });
         }
     }
     

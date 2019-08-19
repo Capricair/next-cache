@@ -8,17 +8,17 @@ function Cache(options) {
         removeDelay: 60,
     };
     const conf = Object.assign({}, defaults, options);
-    const cache = {};
     const timeoutIds = {};
     const localStorage = conf.localStorage || {
-        getItem: (key)=>{
-            return cache[key];
+        cache: {},
+        getItem(key){
+            return this.cache[key];
         },
-        setItem: (key, value)=>{
-            cache[key] = value;
+        setItem(key, value){
+            this.cache[key] = value;
         },
-        removeItem: (key)=>{
-            delete cache[key];
+        removeItem(key){
+            delete this.cache[key];
         }
     };
     const storage = {
