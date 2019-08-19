@@ -149,7 +149,7 @@ function Client(url, options) {
     };
     
     this.get = (key, getValue) => {
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             socket.send({
                 action: "get",
                 key: key,
@@ -166,6 +166,7 @@ function Client(url, options) {
                     }
                 } catch (e) {
                     delete lock[key];
+                    reject(e);
                 } finally {
                     resolve(result.value);
                 }
