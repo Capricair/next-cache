@@ -33,10 +33,10 @@ function Socket(url, options) {
     const response = function (id, data) {
         const callback = queue[id];
         if (callback){
+            delete queue[id];
             if (typeof callback === "function"){
                 callback(data);
             }
-            delete queue[id];
         }
     };
     
