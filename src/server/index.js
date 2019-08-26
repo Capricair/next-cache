@@ -1,23 +1,32 @@
 const WebSocket = require("ws");
-const {TimeUnit} = require("../utils/index");
+const {TimeUnit, sizeof} = require("../utils/index");
 
 function Cache(options) {
+    "use strict";
+    
     const defaults = {
         localStorage: null,
         accessLog: false,
         removeDelay: 60,
+        maxSize: 10000000000,
     };
     const conf = Object.assign({}, defaults, options);
     const timeoutIds = {};
     const localStorage = conf.localStorage || {
         cache: {},
+        size: 0,
         getItem(key){
             return this.cache[key];
         },
         setItem(key, value){
-            this.cache[key] = value;
+            let size = sizeof(value);
+            if (size > 0){
+                this.size += size;
+                this.cache[key] = value;
+            }
         },
         removeItem(key){
+            this.size -= sizeof(this.cache[key]);
             delete this.cache[key];
         }
     };
@@ -36,6 +45,22 @@ function Cache(options) {
             localStorage.removeItem(key);
         }
     };
+
+    Object.defineProperties(this, {
+        maxSize: {
+            configurable: false,
+            get(){
+                return conf.maxSize;
+            }
+        },
+        size: {
+            configurable: false,
+            get(){
+                return localStorage.size;
+            }
+        }
+    });
+    
     this.get = (key, dataType)=>{
         if (conf.accessLog){
             console.log(`get cache ${key}`);
@@ -47,6 +72,7 @@ function Cache(options) {
         }
         return result;
     };
+    
     this.set = (key, value, ttl)=>{
         if (conf.accessLog){
             console.log(`set cache ${key}`);
@@ -63,6 +89,7 @@ function Cache(options) {
             storage.remove(key);
         }, ttl * TimeUnit.Second + conf.removeDelay * TimeUnit.Second);
     };
+    
     this.remove = (key)=>{
         storage.remove(key);
     };
@@ -74,11 +101,14 @@ function Server(options) {
     const defaults = {
         port: process.env.PORT || 666,
         verifyClient: () => true,
-        removeDelay: 60,
-        accessLog: false,
+        cache: {
+            removeDelay: 60,
+            accessLog: false,
+            maxSize: 10000000000,
+        }
     };
     const conf = Object.assign({}, defaults, options);
-    const cache = new Cache(conf);
+    const cache = new Cache(conf.cache);
     
     function sendTo(client, data) {
         try {
@@ -113,16 +143,24 @@ function Server(options) {
                                 id: id,
                                 data: result,
                             });
-                        } else if (data.action === "set") {
-                            cache.set(data.key, data.value, data.ttl);
-                            sendTo(client, {
-                                id: id,
-                                success: true,
-                                message: `set cache ${data.key} success!`
-                            });
+                        } else if (data.action === "set"){
+                            if (cache.size + sizeof(data.value) < cache.maxSize){
+                                cache.set(data.key, data.value, data.ttl);
+                                sendTo(client, {
+                                    id: id,
+                                    success: true,
+                                    message: `set cache ${data.key} success!`
+                                });
+                            } else {
+                                sendTo(client, {
+                                    id: id,
+                                    success: false,
+                                    message: `out of memory!`
+                                });
+                            }
                         }
                     } catch (e) {
-                        console.error("incoming data: ", data, "error: ", e);
+                        console.error("incoming message: ", message, "error: ", e);
                     }
                 });
             });

@@ -17,8 +17,17 @@ const sleep = function (millisecond) {
     });
 };
 
+const sizeof = function(value){
+    try {
+        return Buffer.from(value).length;
+    } catch (e) {
+        return 0;
+    }
+};
+
 module.exports = {
     TimeUnit,
     isCacheExpired,
     sleep,
+    sizeof,
 };
