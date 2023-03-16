@@ -7,7 +7,10 @@
     "test": "node test/index.js"
   },
   "dependencies": {
-    "uuid": "3.3.2",
-    "ws": "7.1.0"
+    "uuid": "9.0.0",
+    "ws": "8.13.0"
+  },
+  "devDependencies": {
+    "prettier": "2.8.4"
   }
 }
