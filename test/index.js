@@ -25,8 +25,6 @@ async function main() {
 
   async function test2() {
     console.log(`test 2 start`)
-    // await cache.set({ key: "cache_key2", value: "your value", ttl: 3 })
-    // await sleep(4 * 1000)
     for (let i = 0; i < 10; i++) {
       cache
         .get({
@@ -45,7 +43,6 @@ async function main() {
     }
   }
 
-  // await test1();
   await test2()
 }
 
