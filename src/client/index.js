@@ -17,15 +17,6 @@ function Socket(url, options) {
 
   let ws = {}
   let isConnectSuccess = false
-  let isConnected = false
-  Object.defineProperties(this, {
-    isConnected: {
-      configurable: false,
-      get: () => {
-        return isConnected
-      },
-    },
-  })
 
   const queue = {}
   const getUniqueId = function () {
@@ -41,6 +32,21 @@ function Socket(url, options) {
     }
   }
 
+  Object.defineProperties(this, {
+    isConnected: {
+      configurable: false,
+      get: () => {
+        return ws.readyState === WebSocket.OPEN
+      },
+    },
+    readyState: {
+      configurable: false,
+      get: () => {
+        return ws.readyState
+      },
+    },
+  })
+
   this.connect = () => {
     return new Promise((resolve) => {
       try {
@@ -52,7 +58,6 @@ function Socket(url, options) {
 
         ws.on("open", () => {
           isConnectSuccess = true
-          isConnected = true
           console.log(`next-cache server connected!`)
           resolve(true)
         })
@@ -72,7 +77,6 @@ function Socket(url, options) {
         })
 
         ws.on("close", async () => {
-          isConnected = false
           console.log(`connection is closed!`)
           // 连接成功后意外情况导致的连接中断才需要自动重连
           if (isConnectSuccess === true) {
@@ -139,10 +143,8 @@ function Client(url, options) {
 
   this.connect = async () => {
     try {
-      if (socket.readyState !== WebSocket.OPEN) {
+      if (!socket.isConnected) {
         await socket.connect(url)
-      } else {
-        console.log(`next-cache server already connected!`)
       }
       return true
     } catch (e) {
@@ -152,7 +154,7 @@ function Client(url, options) {
 
   this.get = ({ key, getValue, ttl, onGetValue, onCacheHit }) => {
     const eventName = `cache_${key}_on_response`
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve) => {
       socket.send(
         {
           action: "get",
@@ -160,7 +162,7 @@ function Client(url, options) {
         },
         async (result) => {
           try {
-            if ((!result?.value || isCacheExpired(result)) && typeof getValue === "function" && !lock[key]) {
+            if ((!result?.value || isCacheExpired(result)) && getValue && !lock[key]) {
               lock[key] = true
               const value = await getValue()
               onGetValue?.({ key, value })
