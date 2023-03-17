@@ -1,6 +1,7 @@
 const WebSocket = require("ws")
-const uuid = require("uuid/v4")
-const { isCacheExpired } = require("../utils/index")
+const { v4: uuid } = require("uuid")
+const { isCacheExpired, sleep } = require("../utils")
+const EventEmitter = require("../utils/event")
 
 function Socket(url, options) {
   "use strict"
@@ -9,7 +10,7 @@ function Socket(url, options) {
     retry: 5,
     timeout: 30000,
     ws: {
-      perMessageDeflate: true, //启用数据压缩
+      perMessageDeflate: false,
     },
   }
   const conf = Object.assign({}, defaults, options)
@@ -70,13 +71,13 @@ function Socket(url, options) {
           resolve(false)
         })
 
-        ws.on("close", () => {
+        ws.on("close", async () => {
           isConnected = false
           console.log(`connection is closed!`)
           // 连接成功后意外情况导致的连接中断才需要自动重连
           if (isConnectSuccess === true) {
             console.log(`reconnecting...`)
-            this.connect(url)
+            await this.connect(url)
           }
         })
       } catch (e) {
@@ -149,7 +150,8 @@ function Client(url, options) {
     }
   }
 
-  this.get = (key, getValue) => {
+  this.get = ({ key, getValue, ttl, onGetValue, onCacheHit }) => {
+    const eventName = `cache_${key}_on_response`
     return new Promise((resolve, reject) => {
       socket.send(
         {
@@ -158,27 +160,37 @@ function Client(url, options) {
         },
         async (result) => {
           try {
-            if (!result.value || (isCacheExpired(result) && typeof getValue === "function" && !lock[key])) {
+            if ((!result?.value || isCacheExpired(result)) && typeof getValue === "function" && !lock[key]) {
               lock[key] = true
-              result = await getValue()
-              if (typeof result !== "object" || result.hasOwnProperty("ttl")) {
-                result = { value: result, ttl: conf.client.ttl }
-              }
-              await this.set(key, result.value, result.ttl)
-              delete lock[key]
+              const value = await getValue()
+              onGetValue?.({ key, value })
+              await this.set({ key, value, ttl })
+              await EventEmitter.dispatchEvent(eventName, { value })
+              resolve(value)
+            } else {
+              const value = await new Promise((resolve1) => {
+                const handleResponse = ({ value }) => {
+                  EventEmitter.removeEventListener(eventName, handleResponse)
+                  resolve1(value)
+                }
+                EventEmitter.addEventListener(eventName, handleResponse)
+              })
+              onCacheHit?.({ key, value })
+              resolve(value)
             }
           } catch (e) {
-            delete lock[key]
-            reject(e)
+            console.error(e)
+            resolve(result?.value)
           } finally {
-            resolve(result.value)
+            await sleep()
+            delete lock[key]
           }
         }
       )
     })
   }
 
-  this.set = (key, value, ttl) => {
+  this.set = ({ key, value, ttl }) => {
     return new Promise((resolve) => {
       socket.send(
         {

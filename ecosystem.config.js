@@ -10,6 +10,7 @@ module.exports = {
     {
       name: "next-cache",
       script: "src/server/index.js",
+      args: "--max-old-space-size=7500",
       time: true,
       env: {
         NODE_ENV: "production",
