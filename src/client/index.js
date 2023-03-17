@@ -53,7 +53,7 @@ function Socket(url, options) {
         ws.on("open", () => {
           isConnectSuccess = true
           isConnected = true
-          console.log(`server is connected!`)
+          console.log(`next-cache server connected!`)
           resolve(true)
         })
 
@@ -102,7 +102,7 @@ function Socket(url, options) {
           response(id, null)
         }, conf.timeout)
       } else {
-        console.error(`server is disconnected!`)
+        console.error(`next-cache server disconnected!`)
         response(id, null)
       }
     } catch (e) {
@@ -142,7 +142,7 @@ function Client(url, options) {
       if (socket.readyState !== WebSocket.OPEN) {
         await socket.connect(url)
       } else {
-        console.log(`server is already connected!`)
+        console.log(`next-cache server already connected!`)
       }
       return true
     } catch (e) {
