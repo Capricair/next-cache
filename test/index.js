@@ -38,7 +38,7 @@ async function main() {
           },
         })
         .then((value) => {
-          // console.log(value)
+          console.log(value)
         })
     }
   }

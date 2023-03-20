@@ -9,9 +9,7 @@ function Socket(url, options) {
   const defaults = {
     retry: 5,
     timeout: 30000,
-    ws: {
-      perMessageDeflate: false,
-    },
+    quiet: true
   }
   const conf = Object.assign({}, defaults, options)
 
@@ -50,15 +48,12 @@ function Socket(url, options) {
   this.connect = () => {
     return new Promise((resolve) => {
       try {
-        if (ws.terminate) {
-          ws.terminate()
-        }
-
+        ws.terminate?.()
         ws = new WebSocket(url, conf.ws)
 
         ws.on("open", () => {
           isConnectSuccess = true
-          console.log(`next-cache server connected!`)
+          console.log(`[next-cache] connected!`)
           resolve(true)
         })
 
@@ -77,10 +72,10 @@ function Socket(url, options) {
         })
 
         ws.on("close", async () => {
-          console.log(`connection is closed!`)
+          console.log(`[next-cache] connection closed!`)
           // 连接成功后意外情况导致的连接中断才需要自动重连
           if (isConnectSuccess === true) {
-            console.log(`reconnecting...`)
+            console.log(`[next-cache] reconnecting...`)
             await this.connect(url)
           }
         })
@@ -106,7 +101,7 @@ function Socket(url, options) {
           response(id, null)
         }, conf.timeout)
       } else {
-        console.error(`next-cache server disconnected!`)
+        console.error(`[next-cache] server disconnected!`)
         response(id, null)
       }
     } catch (e) {
